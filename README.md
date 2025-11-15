@@ -1,0 +1,194 @@
+-- Create database 
+-- CREATE DATABASE DCElectricals;
+-- USE DCElectricals;
+
+
+-- Create USER table
+CREATE TABLE IF NOT EXISTS USER (
+  userID INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  email VARCHAR(100) NOT NULL UNIQUE,
+  password VARCHAR(255) NOT NULL,
+  role ENUM('Admin','Customer','Technician','Storekeeper') NOT NULL,
+  createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+  lastLogin DATETIME NULL
+);
+
+-- Create CUSTOMER table
+CREATE TABLE IF NOT EXISTS CUSTOMER (
+  CustomerID INT AUTO_INCREMENT PRIMARY KEY,
+  UserID INT NOT NULL,
+  Name VARCHAR(100) NOT NULL,
+  ContactNo VARCHAR(20),
+  Address VARCHAR(255),
+  DateRegistered DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (UserID) REFERENCES USER(userID) ON DELETE CASCADE
+);
+
+-- Create TECHNICIAN table
+CREATE TABLE IF NOT EXISTS TECHNICIAN (
+  TechnicianID INT AUTO_INCREMENT PRIMARY KEY,
+  UserID INT NOT NULL,
+  Name VARCHAR(100) NOT NULL,
+  ContactNo VARCHAR(20),
+  Address VARCHAR(255),
+  AvailabilityStatus ENUM('Available','Assigned','Inactive') DEFAULT 'Available',
+  FOREIGN KEY (UserID) REFERENCES USER(userID) ON DELETE CASCADE
+);
+
+-- Create ADMIN table
+CREATE TABLE IF NOT EXISTS ADMIN (
+  AdminID INT AUTO_INCREMENT PRIMARY KEY,
+  UserID INT NOT NULL,
+  Name VARCHAR(100) NOT NULL,
+  ContactNo VARCHAR(20),
+  Address VARCHAR(255),
+  FOREIGN KEY (UserID) REFERENCES USER(userID) ON DELETE CASCADE
+);
+
+-- Create STOREKEEPER table
+CREATE TABLE IF NOT EXISTS STOREKEEPER (
+  StorekeeperID INT AUTO_INCREMENT PRIMARY KEY,
+  UserID INT NOT NULL,
+  Name VARCHAR(100) NOT NULL,
+  ContactNo VARCHAR(20),
+  Address VARCHAR(255),
+  FOREIGN KEY (UserID) REFERENCES USER(userID) ON DELETE CASCADE
+);
+
+-- Create PRODUCT table
+CREATE TABLE IF NOT EXISTS PRODUCT (
+  ProductID INT AUTO_INCREMENT PRIMARY KEY,
+  Name VARCHAR(100) NOT NULL,
+  Description TEXT,
+  Category VARCHAR(50),
+  Brand VARCHAR(50),
+  Price DECIMAL(10,2) NOT NULL,
+  StockQty INT DEFAULT 0,
+  ReorderLevel INT DEFAULT 0,
+  CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create ORDER table
+CREATE TABLE IF NOT EXISTS `ORDER` (
+  OrderID INT AUTO_INCREMENT PRIMARY KEY,
+  CustomerID INT NOT NULL,
+  OrderDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+  Status ENUM('Pending','Processing','Completed','Cancelled') DEFAULT 'Pending',
+  TotalAmount DECIMAL(10,2),
+  ShippingAddress VARCHAR(255),
+  FOREIGN KEY (CustomerID) REFERENCES CUSTOMER(CustomerID) ON DELETE CASCADE
+);
+
+-- Create ORDER_DETAIL table
+CREATE TABLE IF NOT EXISTS ORDER_DETAIL (
+  OrderDetailID INT AUTO_INCREMENT PRIMARY KEY,
+  OrderID INT NOT NULL,
+  ProductID INT NOT NULL,
+  Quantity INT NOT NULL,
+  UnitPrice DECIMAL(10,2) NOT NULL,
+  FOREIGN KEY (OrderID) REFERENCES `ORDER`(OrderID) ON DELETE CASCADE,
+  FOREIGN KEY (ProductID) REFERENCES PRODUCT(ProductID) ON DELETE CASCADE
+);
+
+-- Create CART table
+CREATE TABLE IF NOT EXISTS CART (
+  CartID INT AUTO_INCREMENT PRIMARY KEY,
+  CustomerID INT NOT NULL,
+  CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (CustomerID) REFERENCES CUSTOMER(CustomerID) ON DELETE CASCADE
+);
+
+-- Create CART_ITEMS table
+CREATE TABLE IF NOT EXISTS CART_ITEMS (
+  CartItemID INT AUTO_INCREMENT PRIMARY KEY,
+  CartID INT NOT NULL,
+  ProductID INT NOT NULL,
+  Quantity INT NOT NULL,
+  FOREIGN KEY (CartID) REFERENCES CART(CartID) ON DELETE CASCADE,
+  FOREIGN KEY (ProductID) REFERENCES PRODUCT(ProductID) ON DELETE CASCADE
+);
+
+-- Create SERVICE table
+CREATE TABLE IF NOT EXISTS SERVICE (
+  ServiceID INT AUTO_INCREMENT PRIMARY KEY,
+  Name VARCHAR(100) NOT NULL,
+  Description TEXT,
+  Price DECIMAL(10,2) NOT NULL,
+  Duration VARCHAR(50)
+);
+
+-- Create SERVICE_BOOKING table
+CREATE TABLE IF NOT EXISTS SERVICE_BOOKING (
+  BookingID INT AUTO_INCREMENT PRIMARY KEY,
+  CustomerID INT NOT NULL,
+  ServiceID INT NOT NULL,
+  TechnicianID INT,
+  BookingDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PreferredTime VARCHAR(50),
+  Status ENUM('Pending','Assigned','InProgress','Completed','Cancelled') DEFAULT 'Pending',
+  Notes TEXT,
+  FOREIGN KEY (CustomerID) REFERENCES CUSTOMER(CustomerID) ON DELETE CASCADE,
+  FOREIGN KEY (ServiceID) REFERENCES SERVICE(ServiceID) ON DELETE CASCADE,
+  FOREIGN KEY (TechnicianID) REFERENCES TECHNICIAN(TechnicianID) ON DELETE SET NULL
+);
+
+-- Create INVOICES table
+CREATE TABLE IF NOT EXISTS INVOICES (
+  InvoiceID INT AUTO_INCREMENT PRIMARY KEY,
+  OrderID INT NULL,
+  BookingID INT NULL,
+  DateIssued DATETIME DEFAULT CURRENT_TIMESTAMP,
+  Amount DECIMAL(10,2) NOT NULL,
+  FOREIGN KEY (OrderID) REFERENCES `ORDER`(OrderID) ON DELETE SET NULL,
+  FOREIGN KEY (BookingID) REFERENCES SERVICE_BOOKING(BookingID) ON DELETE SET NULL
+);
+
+-- Create FEEDBACK table
+CREATE TABLE IF NOT EXISTS FEEDBACK (
+  FeedbackID INT AUTO_INCREMENT PRIMARY KEY,
+  CustomerID INT NOT NULL,
+  TechnicianID INT NOT NULL,
+  Rating TINYINT CHECK (Rating BETWEEN 1 AND 5),
+  Comment TEXT,
+  Date DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (CustomerID) REFERENCES CUSTOMER(CustomerID) ON DELETE CASCADE,
+  FOREIGN KEY (TechnicianID) REFERENCES TECHNICIAN(TechnicianID) ON DELETE CASCADE
+);
+
+-- Create INQUIRIES table
+CREATE TABLE IF NOT EXISTS INQUIRIES (
+  InquiryID INT AUTO_INCREMENT PRIMARY KEY,
+  CustomerID INT NOT NULL,
+  Subject VARCHAR(100) NOT NULL,
+  Message TEXT NOT NULL,
+  Response TEXT,
+  Date DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (CustomerID) REFERENCES CUSTOMER(CustomerID) ON DELETE CASCADE
+);
+
+-- Insert some sample data (optional)
+-- INSERT INTO SERVICE (Name, Description, Price, Duration) VALUES 
+-- ('Electrical Installation', 'Complete electrical wiring for new buildings', 5000.00, '1-2 days'),
+-- ('Electrical Repair', 'Fix electrical problems and faults', 1500.00, '2-4 hours'),
+-- ('Appliance Installation', 'Install electrical appliances safely', 800.00, '1-2 hours');
+
+-- INSERT INTO PRODUCT (Name, Description, Category, Brand, Price, StockQty, ReorderLevel) VALUES
+-- ('LED Bulb 9W', 'Energy efficient LED bulb', 'Lighting', 'Philips', 450.00, 100, 20),
+-- ('Extension Cord 5m', '5 meter extension cord with 3 outlets', 'Accessories', 'Generic', 750.00, 50, 10),
+-- ('Wall Socket', 'Standard wall power socket', 'Electrical Components', 'ABB', 320.00, 200, 30);
+
+-- Create the password reset tokens table
+-- Run this SQL in your MySQL Workbench to add the password reset functionality
+
+CREATE TABLE IF NOT EXISTS PASSWORD_RESET_TOKENS (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    token VARCHAR(64) NOT NULL UNIQUE,
+    expires_at DATETIME NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES USER(userID) ON DELETE CASCADE,
+    INDEX idx_token (token),
+    INDEX idx_user_id (user_id),
+    INDEX idx_expires_at (expires_at)
+);
